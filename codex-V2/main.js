@@ -18,22 +18,40 @@
   const photoPanel = document.getElementById('photo-panel');
   const teleportPanel = document.getElementById('teleport-panel');
 
-  // --- Moteur voxel ---
-  const noa = window.noa({
-    debug: false,
-    inverseY: false,
-    showFPS: false,
-    chunkSize: 32,
-    chunkAddDistance: 3,
-    chunkRemoveDistance: 4,
-    playerStart: [0, 60, 0],
-    playerWidth: 0.6,
-    playerHeight: 1.8,
-    renderOnResize: true,
-    useAO: true,
-    blockTestDistance: 8,
-    canvas: canvas
-  });
+    // --- Moteur voxel ---
+    const noaFactory = window.noa || (window.NOA && window.NOA.Engine);
+    if (!noaFactory) {
+      throw new Error('noa-engine non chargé (vérifie le script CDN)');
+    }
+    const noa = typeof noaFactory === 'function' ? new noaFactory({
+      debug: false,
+      inverseY: false,
+      showFPS: false,
+      chunkSize: 32,
+      chunkAddDistance: 3,
+      chunkRemoveDistance: 4,
+      playerStart: [0, 60, 0],
+      playerWidth: 0.6,
+      playerHeight: 1.8,
+      renderOnResize: true,
+      useAO: true,
+      blockTestDistance: 8,
+      canvas: canvas
+    }) : noaFactory({
+      debug: false,
+      inverseY: false,
+      showFPS: false,
+      chunkSize: 32,
+      chunkAddDistance: 3,
+      chunkRemoveDistance: 4,
+      playerStart: [0, 60, 0],
+      playerWidth: 0.6,
+      playerHeight: 1.8,
+      renderOnResize: true,
+      useAO: true,
+      blockTestDistance: 8,
+      canvas: canvas
+    });
 
   // Lumière et ambiance "wow"
   const scene = noa.rendering.getScene();
