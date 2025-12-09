@@ -166,3 +166,17 @@ button:active { transform: translateY(1px); }
 }
 .fade-out { opacity: 0; pointer-events: none; }
 .fade-in { opacity: 1; }
+
+.error-banner {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 16px;
+  background: #ff6464;
+  color: #0f0f0f;
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+  font-weight: 700;
+  z-index: 30;
+}
