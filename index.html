@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voxel Sandbox v0.1</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="title-screen" class="overlay">
+    <div class="menu-card">
+      <h1>Voxel Sandbox v0.1</h1>
+      <p class="subtitle">Prototype WebGL / three.js</p>
+      <button id="play-btn">Jouer</button>
+      <button id="options-btn">Options</button>
+      <button id="quit-btn">Quitter</button>
+      <div id="options-panel" class="hidden">
+        <label><input type="checkbox" id="music-toggle" checked /> Ambiance vent</label>
+        <label><input type="checkbox" id="fog-toggle" checked /> Brouillard doux</label>
+      </div>
+      <p class="hint">Ouverture directe dans le navigateur, pas d'installation.</p>
+    </div>
+  </div>
+
+  <div id="hud" class="hidden">
+    <div id="reticle">+</div>
+    <div id="hotbar"></div>
+    <div id="block-name"></div>
+    <div id="help">
+      <p>ZQSD/WASD : bouger</p>
+      <p>Souris : regarder</p>
+      <p>Clic gauche : casser</p>
+      <p>Clic droit : poser</p>
+    </div>
+    <div id="inventory" class="hidden">
+      <h2>Inventaire</h2>
+      <div id="inventory-grid"></div>
+    </div>
+    <div id="vignette"></div>
+  </div>
+
+  <canvas id="scene"></canvas>
+  <audio id="ambience" loop src="data:audio/wav;base64,UklGRoQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YYQAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA=" preload="auto"></audio>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.min.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

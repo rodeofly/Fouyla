@@ -1,0 +1,168 @@
+/* style.css - UI minimaliste + effet "wow" */
+:root {
+  --bg: #0f1016;
+  --accent: #7fe7c4;
+  --text: #e8f0ff;
+  --muted: #8ea0b5;
+}
+* {
+  box-sizing: border-box;
+  user-select: none;
+}
+body, html {
+  margin: 0;
+  height: 100%;
+  background: radial-gradient(circle at 20% 20%, #1c1f2b, #0a0b10);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  color: var(--text);
+  overflow: hidden;
+}
+canvas#scene {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  display: block;
+  background: linear-gradient(#5ea9ff, #a0d5ff 40%, #cfe5ff 60%, #eef7ff);
+}
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px) brightness(0.7);
+  background: rgba(8, 9, 14, 0.7);
+  transition: opacity 0.6s ease;
+  z-index: 10;
+}
+.menu-card {
+  padding: 32px 40px;
+  background: rgba(18, 20, 30, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+  text-align: center;
+  min-width: 320px;
+}
+.menu-card h1 {
+  margin: 0 0 8px;
+  letter-spacing: 1px;
+}
+.subtitle { color: var(--muted); margin-bottom: 18px; }
+button {
+  width: 100%;
+  margin: 8px 0;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0a0b10;
+  background: linear-gradient(120deg, #9cf0c7, #7bd0ff);
+  box-shadow: 0 10px 30px rgba(123, 208, 255, 0.25);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+button:hover { transform: translateY(-2px); filter: brightness(1.05); }
+button:active { transform: translateY(1px); }
+.hint { font-size: 12px; color: var(--muted); margin-top: 12px; }
+.hidden { display: none; }
+
+#hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.7s ease;
+}
+#reticle {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 20px;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 0 6px rgba(0,0,0,0.7);
+}
+#hotbar {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  padding: 12px 14px;
+  background: rgba(15, 16, 22, 0.65);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  box-shadow: 0 18px 48px rgba(0,0,0,0.4);
+}
+.hot-slot {
+  width: 54px; height: 54px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.15);
+  display: grid;
+  place-items: center;
+  color: #cde7ff;
+  font-weight: 700;
+  background: rgba(255,255,255,0.04);
+  transition: border-color 0.2s ease, transform 0.15s ease;
+}
+.hot-slot.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 12px rgba(127, 231, 196, 0.5);
+  transform: translateY(-4px);
+}
+#block-name {
+  position: absolute;
+  bottom: 90px;
+  left: 50%; transform: translateX(-50%);
+  color: #f6fffa;
+  text-shadow: 0 0 8px rgba(0,0,0,0.55);
+}
+#help {
+  position: absolute;
+  bottom: 20px; left: 20px;
+  background: rgba(0,0,0,0.4);
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 12px;
+  color: #d7e3ff;
+  opacity: 0.9;
+  transition: opacity 0.5s ease;
+}
+#inventory {
+  position: absolute;
+  inset: 30% 35%;
+  background: rgba(10,12,18,0.85);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  padding: 16px;
+  text-align: center;
+  pointer-events: all;
+}
+#inventory-grid {
+  margin-top: 8px;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(4, 1fr);
+}
+.inv-slot {
+  width: 60px; height: 60px;
+  border-radius: 8px;
+  border: 1px dashed rgba(255,255,255,0.2);
+  display: grid;
+  place-items: center;
+  color: #9db8ff;
+  background: rgba(255,255,255,0.04);
+}
+#vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(0,0,0,0) 60%, rgba(0,0,0,0.25));
+}
+.fade-out { opacity: 0; pointer-events: none; }
+.fade-in { opacity: 1; }
