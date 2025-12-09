@@ -276,154 +276,184 @@ function voxelRaycast(origin, direction, maxDist, world) {
   return { hit: false };
 }
 
-// --- Initialisation scène ---
-const canvas = document.getElementById('scene');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setPixelRatio(window.devicePixelRatio);
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.outputEncoding = THREE.sRGBEncoding;
-renderer.shadowMap.enabled = true;
+async function ensureThreeLoaded() {
+  if (window.THREE) return window.THREE;
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.min.js';
+    script.onload = () => window.THREE ? resolve(window.THREE) : reject(new Error('three.js chargé sans THREE global'));
+    script.onerror = () => reject(new Error('Impossible de charger three.js'));
+    document.head.appendChild(script);
+  });
+}
 
-const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0xa0d5ff, 0.012);
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 500);
-const input = new Input(renderer, document.getElementById('hud'));
-const perlin = new Perlin();
-const world = new World(perlin);
-const player = new Player(camera, world);
+function showThreeError(message) {
+  console.error(message);
+  const banner = document.createElement('div');
+  banner.className = 'error-banner';
+  banner.innerText = `Erreur: ${message}. Vérifie ta connexion ou recharge la page.`;
+  document.body.appendChild(banner);
+}
 
-// Lumières & ciel
-const hemi = new THREE.HemisphereLight(0xd9e7ff, 0x4e4a46, 0.7);
-scene.add(hemi);
-const sun = new THREE.DirectionalLight(0xffffff, 0.8);
-sun.position.set(50, 100, 20);
-sun.castShadow = true;
-scene.add(sun);
-const ambientGradient = new THREE.Color(0x87cefa);
-scene.background = ambientGradient;
+async function start() {
+  try {
+    await ensureThreeLoaded();
+  } catch (err) {
+    showThreeError(err.message);
+    return;
+  }
 
-// Grille chunks (pré-génération petite zone)
-const chunkMeshes = new Map();
-function ensureChunkMesh(cx, cz) {
-  const key = `${cx},${cz}`;
-  const chunk = world.getChunkAt(cx * CHUNK_SIZE, cz * CHUNK_SIZE);
-  if (!chunkMeshes.has(key)) {
+  // --- Initialisation scène ---
+  const canvas = document.getElementById('scene');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.shadowMap.enabled = true;
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0xa0d5ff, 0.012);
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 500);
+  const input = new Input(renderer, document.getElementById('hud'));
+  const perlin = new Perlin();
+  const world = new World(perlin);
+  const player = new Player(camera, world);
+
+  // Lumières & ciel
+  const hemi = new THREE.HemisphereLight(0xd9e7ff, 0x4e4a46, 0.7);
+  scene.add(hemi);
+  const sun = new THREE.DirectionalLight(0xffffff, 0.8);
+  sun.position.set(50, 100, 20);
+  sun.castShadow = true;
+  scene.add(sun);
+  const ambientGradient = new THREE.Color(0x87cefa);
+  scene.background = ambientGradient;
+
+  // Grille chunks (pré-génération petite zone)
+  const chunkMeshes = new Map();
+  function ensureChunkMesh(cx, cz) {
+    const key = `${cx},${cz}`;
+    const chunk = world.getChunkAt(cx * CHUNK_SIZE, cz * CHUNK_SIZE);
+    if (!chunkMeshes.has(key)) {
+      const mesh = buildChunkMesh(chunk, world);
+      chunkMeshes.set(key, mesh);
+      scene.add(mesh);
+    }
+  }
+  for (let cx = 0; cx < WORLD_SIZE / CHUNK_SIZE; cx++) {
+    for (let cz = 0; cz < WORLD_SIZE / CHUNK_SIZE; cz++) ensureChunkMesh(cx, cz);
+  }
+
+  // UI setup
+  const hud = document.getElementById('hud');
+  const hotbar = document.getElementById('hotbar');
+  const blockName = document.getElementById('block-name');
+  const help = document.getElementById('help');
+  const ambience = document.getElementById('ambience');
+  const fogToggle = document.getElementById('fog-toggle');
+  fogToggle.addEventListener('change', () => scene.fog.density = fogToggle.checked ? 0.012 : 0);
+  const blocksList = [BLOCK.GRASS, BLOCK.DIRT, BLOCK.STONE, BLOCK.WATER, BLOCK.GRASS, BLOCK.DIRT, BLOCK.STONE];
+  let selected = 0;
+  blocksList.forEach((b, i) => {
+    const div = document.createElement('div');
+    div.className = 'hot-slot' + (i === selected ? ' selected' : '');
+    div.style.borderColor = `#${BLOCK_COLORS[b].toString(16)}`;
+    div.innerText = Object.keys(BLOCK).find(k => BLOCK[k] === b).toLowerCase();
+    hotbar.appendChild(div);
+  });
+  function updateHotbar() {
+    [...hotbar.children].forEach((c, i) => c.classList.toggle('selected', i === selected));
+    const blockKey = Object.keys(BLOCK).find(k => BLOCK[k] === blocksList[selected]);
+    blockName.innerText = blockKey.toLowerCase();
+  }
+  updateHotbar();
+
+  window.addEventListener('wheel', e => {
+    selected = (selected + (e.deltaY > 0 ? 1 : -1) + blocksList.length) % blocksList.length;
+    updateHotbar();
+  });
+
+  // Title screen interactions
+  const title = document.getElementById('title-screen');
+  document.getElementById('play-btn').onclick = () => {
+    title.classList.add('fade-out');
+    setTimeout(() => { title.style.display = 'none'; hud.classList.remove('hidden'); hud.classList.add('fade-in'); input.requestPointerLock(); }, 600);
+    help.style.opacity = 1;
+    setTimeout(() => help.style.opacity = 0, 8000);
+    if (document.getElementById('music-toggle').checked) ambience.play();
+  };
+  document.getElementById('options-btn').onclick = () => document.getElementById('options-panel').classList.toggle('hidden');
+  document.getElementById('quit-btn').onclick = () => alert('Utilise Alt+F4 ou ferme l\'onglet.');
+
+  // Inventaire factice
+  const invGrid = document.getElementById('inventory-grid');
+  for (let i = 0; i < 16; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'inv-slot';
+    slot.innerText = i < blocksList.length ? 'Bloc' : '';
+    invGrid.appendChild(slot);
+  }
+
+  // Sélection / interaction blocs
+  const raycaster = new THREE.Raycaster();
+  const highlight = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.01,1.01,1.01)), new THREE.LineBasicMaterial({ color: 0xffffff }));
+  highlight.visible = false; scene.add(highlight);
+
+  function rebuildChunkAround(wx, wz) {
+    const chunk = world.getChunkAt(wx, wz);
+    const key = `${chunk.cx},${chunk.cz}`;
     const mesh = buildChunkMesh(chunk, world);
+    scene.remove(chunkMeshes.get(key));
     chunkMeshes.set(key, mesh);
     scene.add(mesh);
   }
-}
-for (let cx = 0; cx < WORLD_SIZE / CHUNK_SIZE; cx++) {
-  for (let cz = 0; cz < WORLD_SIZE / CHUNK_SIZE; cz++) ensureChunkMesh(cx, cz);
-}
 
-// UI setup
-const hud = document.getElementById('hud');
-const hotbar = document.getElementById('hotbar');
-const blockName = document.getElementById('block-name');
-const help = document.getElementById('help');
-const ambience = document.getElementById('ambience');
-const fogToggle = document.getElementById('fog-toggle');
-fogToggle.addEventListener('change', () => scene.fog.density = fogToggle.checked ? 0.012 : 0);
-const blocksList = [BLOCK.GRASS, BLOCK.DIRT, BLOCK.STONE, BLOCK.WATER, BLOCK.GRASS, BLOCK.DIRT, BLOCK.STONE];
-let selected = 0;
-blocksList.forEach((b, i) => {
-  const div = document.createElement('div');
-  div.className = 'hot-slot' + (i === selected ? ' selected' : '');
-  div.style.borderColor = `#${BLOCK_COLORS[b].toString(16)}`;
-  div.innerText = Object.keys(BLOCK).find(k => BLOCK[k] === b).toLowerCase();
-  hotbar.appendChild(div);
-});
-function updateHotbar() {
-  [...hotbar.children].forEach((c, i) => c.classList.toggle('selected', i === selected));
-  const blockKey = Object.keys(BLOCK).find(k => BLOCK[k] === blocksList[selected]);
-  blockName.innerText = blockKey.toLowerCase();
-}
-updateHotbar();
+  window.addEventListener('mousedown', e => {
+    if (!input.pointerLocked) return;
+    raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
+    const dir = raycaster.ray.direction.clone();
+    const res = voxelRaycast(camera.position.clone(), dir, 8, world);
+    if (!res.hit) return;
+    if (e.button === 0) { // casser
+      world.setBlock(res.wx, res.wy, res.wz, BLOCK.AIR);
+      rebuildChunkAround(res.wx, res.wz);
+    } else if (e.button === 2 && res.prev) { // placer
+      const block = blocksList[selected];
+      world.setBlock(res.prev.wx, res.prev.wy, res.prev.wz, block);
+      rebuildChunkAround(res.prev.wx, res.prev.wz);
+    }
+  });
+  window.addEventListener('contextmenu', e => e.preventDefault());
 
-window.addEventListener('wheel', e => {
-  selected = (selected + (e.deltaY > 0 ? 1 : -1) + blocksList.length) % blocksList.length;
-  updateHotbar();
-});
+  // Resize
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
 
-// Title screen interactions
-const title = document.getElementById('title-screen');
-document.getElementById('play-btn').onclick = () => {
-  title.classList.add('fade-out');
-  setTimeout(() => { title.style.display = 'none'; hud.classList.remove('hidden'); hud.classList.add('fade-in'); input.requestPointerLock(); }, 600);
-  help.style.opacity = 1;
-  setTimeout(() => help.style.opacity = 0, 8000);
-  if (document.getElementById('music-toggle').checked) ambience.play();
-};
-document.getElementById('options-btn').onclick = () => document.getElementById('options-panel').classList.toggle('hidden');
-document.getElementById('quit-btn').onclick = () => alert('Utilise Alt+F4 ou ferme l\'onglet.');
+  // Boucle principale
+  let last = performance.now();
+  function loop() {
+    requestAnimationFrame(loop);
+    const now = performance.now();
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    player.yaw = input.yaw; player.pitch = input.pitch;
+    player.update(dt, input);
 
-// Inventaire factice
-const invGrid = document.getElementById('inventory-grid');
-for (let i = 0; i < 16; i++) {
-  const slot = document.createElement('div');
-  slot.className = 'inv-slot';
-  slot.innerText = i < blocksList.length ? 'Bloc' : '';
-  invGrid.appendChild(slot);
-}
+    // highlight bloc ciblé
+    raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
+    const dir = raycaster.ray.direction.clone();
+    const res = voxelRaycast(camera.position.clone(), dir, 8, world);
+    if (res.hit) {
+      highlight.visible = true;
+      highlight.position.set(res.wx + 0.5, res.wy + 0.5, res.wz + 0.5);
+    } else highlight.visible = false;
 
-// Sélection / interaction blocs
-const raycaster = new THREE.Raycaster();
-const highlight = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.01,1.01,1.01)), new THREE.LineBasicMaterial({ color: 0xffffff }));
-highlight.visible = false; scene.add(highlight);
-
-function rebuildChunkAround(wx, wz) {
-  const chunk = world.getChunkAt(wx, wz);
-  const key = `${chunk.cx},${chunk.cz}`;
-  const mesh = buildChunkMesh(chunk, world);
-  scene.remove(chunkMeshes.get(key));
-  chunkMeshes.set(key, mesh);
-  scene.add(mesh);
-}
-
-window.addEventListener('mousedown', e => {
-  if (!input.pointerLocked) return;
-  raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
-  const dir = raycaster.ray.direction.clone();
-  const res = voxelRaycast(camera.position.clone(), dir, 8, world);
-  if (!res.hit) return;
-  if (e.button === 0) { // casser
-    world.setBlock(res.wx, res.wy, res.wz, BLOCK.AIR);
-    rebuildChunkAround(res.wx, res.wz);
-  } else if (e.button === 2 && res.prev) { // placer
-    const block = blocksList[selected];
-    world.setBlock(res.prev.wx, res.prev.wy, res.prev.wz, block);
-    rebuildChunkAround(res.prev.wx, res.prev.wz);
+    renderer.render(scene, camera);
   }
-});
-window.addEventListener('contextmenu', e => e.preventDefault());
-
-// Resize
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
-
-// Boucle principale
-let last = performance.now();
-function loop() {
-  requestAnimationFrame(loop);
-  const now = performance.now();
-  const dt = Math.min(0.05, (now - last) / 1000);
-  last = now;
-  player.yaw = input.yaw; player.pitch = input.pitch;
-  player.update(dt, input);
-
-  // highlight bloc ciblé
-  raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
-  const dir = raycaster.ray.direction.clone();
-  const res = voxelRaycast(camera.position.clone(), dir, 8, world);
-  if (res.hit) {
-    highlight.visible = true;
-    highlight.position.set(res.wx + 0.5, res.wy + 0.5, res.wz + 0.5);
-  } else highlight.visible = false;
-
-  renderer.render(scene, camera);
+  loop();
 }
-loop();
+
+start();
