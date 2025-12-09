@@ -4,7 +4,7 @@
 
 [![Démo en ligne](https://img.shields.io/badge/🎮_Essayer_la_Démo-Cliquez_ici-success?style=for-the-badge&logo=html5)](https://rodeofly.github.io/Fouyla/)
 
-![Capture d'écran du jeu](https://via.placeholder.com/800x400?text=Capture+d'écran+Fouyla) *Remplacez ce lien par une vraie capture d'écran de votre jeu*
+![Capture d'écran du jeu](https://github.com/rodeofly/Fouyla/blob/main/screenshot1.png)
 
 ---
 
